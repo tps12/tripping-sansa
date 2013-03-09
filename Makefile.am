@@ -2,6 +2,7 @@ heroku_app = cervice
 
 bin_PROGRAMS = $(heroku_app)
 AM_CPPFLAGS = -I$(top_srcdir)/include
+SUBDIRS = tests
 
 cervice_SOURCES = src/minimal_example.c
 cervice_CFLAGS = $(DEPS_CFLAGS) -std=c89 -Werror
@@ -34,4 +35,7 @@ $(vulcan_dir)/.git: $(vulcan_dir)/Procfile $(vulcan_dir)/bin $(vulcan_dir)/lib
 deploy: $(vulcan_dir)/.git
 	cd $(vulcan_dir) && git push -f git@heroku.com:$(HEROKU_APP_NAME).git master
 
-.PHONY: deploy
+test:
+	cd tests && make test
+
+.PHONY: deploy test

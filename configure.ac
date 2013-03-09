@@ -7,5 +7,5 @@ PKG_CHECK_MODULES([DEPS], [libmicrohttpd])
 AC_ARG_VAR(HEROKU_APP_NAME, heroku app to to deploy)
 
 AC_PROG_CC
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile])
 AC_OUTPUT

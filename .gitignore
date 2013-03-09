@@ -1,0 +1,15 @@
+_vulcan/
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+cervice
+config.log
+config.status
+depcomp
+install-sh
+missing
+src/.deps/
+src/.dirstamp
+*.o
+vendor/share/

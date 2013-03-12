@@ -1,6 +1,8 @@
 #include <regex.h>
 #include <stdio.h>
 
+#include "routing/types/route.h"
+
 typedef resource_t* (*find_resource_fn)(char const* path, char const** args);
 
 typedef struct route_finder_t {

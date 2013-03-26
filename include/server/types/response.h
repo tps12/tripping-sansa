@@ -3,7 +3,8 @@
 
 typedef struct {
     unsigned short status;
-    char const* entity;
+    char* allow;
+    char* entity;
     size_t entity_length;
 } response_t;
 

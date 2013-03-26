@@ -6,7 +6,7 @@ LDADD = -lcunit
 
 test_routing_SOURCES = routing/test_routing.c
 
-test_server_SOURCES = server/test_server.c
+test_server_SOURCES = server/test_server.c test_helpers.c
 
 test: $(bin_PROGRAMS)
 	for t in $(bin_PROGRAMS); do ./$$t; done

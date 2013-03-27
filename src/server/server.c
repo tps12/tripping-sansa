@@ -2,10 +2,10 @@
 #include "server/types/resource.h"
 #include "server/types/response.h"
 
-static response_t* not_acceptable(writer_t* writers)
+static struct response* not_acceptable(struct writer* writers)
 {
     int first = 1;
-    response_t* response = malloc(sizeof(response_t));
+    struct response* response = malloc(sizeof(struct response));
     response->status = 406;
     response->allow = 0;
     response->entity = malloc(2048);
@@ -20,10 +20,10 @@ static response_t* not_acceptable(writer_t* writers)
     return response;
 }
 
-static response_t* unsupported_type(reader_t* readers)
+static struct response* unsupported_type(struct reader* readers)
 {
     int first = 1;
-    response_t* response = malloc(sizeof(response_t));
+    struct response* response = malloc(sizeof(struct response));
     response->status = 415;
     response->allow = 0;
     response->entity = malloc(2048);
@@ -38,9 +38,9 @@ static response_t* unsupported_type(reader_t* readers)
     return response;
 }
 
-static response_t* respond_and_write(char const* path, void* data, respond_fn respond, writer_t* writers, char const* accept_type)
+static struct response* respond_and_write(char const* path, void* data, respond_fn respond, struct writer* writers, char const* accept_type)
 {
-    writer_t* writer;
+    struct writer* writer;
     if (!writers)
         return respond(path, data);
     for (writer = writers; writer; writer = writer->next)
@@ -49,9 +49,9 @@ static response_t* respond_and_write(char const* path, void* data, respond_fn re
     return not_acceptable(writers);
 }
 
-static response_t* read_and_respond(reader_t* readers, respond_fn respond, char const* path, char const* entity_type, char const* entity, size_t entity_length, writer_t* writers, char const* accept)
+static struct response* read_and_respond(struct reader* readers, respond_fn respond, char const* path, char const* entity_type, char const* entity, size_t entity_length, struct writer* writers, char const* accept)
 {
-    reader_t* reader;
+    struct reader* reader;
     if (!readers)
         return respond_and_write(path, 0, respond, writers, accept);
     for (reader = readers; reader; reader = reader->next)
@@ -60,7 +60,7 @@ static response_t* read_and_respond(reader_t* readers, respond_fn respond, char 
     return unsupported_type(readers);
 }
 
-static response_t* respond_method(method_t* resource_method, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
+static struct response* respond_method(struct method* resource_method, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
 {
     return resource_method ?
         (!strncmp(resource_method->method, method, 16) ?
@@ -69,17 +69,17 @@ static response_t* respond_method(method_t* resource_method, char const* method,
         0;
 }
 
-static resource_t* resource_define(method_t* methods)
+static struct resource* resource_define(struct method* methods)
 {
-    resource_t* result = malloc(sizeof(resource_t));
+    struct resource* result = malloc(sizeof(struct resource));
     if (result)
         result->methods = methods;
     return result;
 }
 
-static reader_t* entity_reader(char const* type, reader_fn reader, reader_t* next)
+static struct reader* entity_reader(char const* type, reader_fn reader, struct reader* next)
 {
-    reader_t* result = malloc(sizeof(reader_t));
+    struct reader* result = malloc(sizeof(struct reader));
     if (result) {
         result->type = type;
         result->reader = reader;
@@ -88,9 +88,9 @@ static reader_t* entity_reader(char const* type, reader_fn reader, reader_t* nex
     return result;
 }
 
-static writer_t* entity_writer(char const* type, writer_fn writer, writer_t* next)
+static struct writer* entity_writer(char const* type, writer_fn writer, struct writer* next)
 {
-    writer_t* result = malloc(sizeof(writer_t));
+    struct writer* result = malloc(sizeof(struct writer));
     if (result) {
         result->type = type;
         result->writer = writer;
@@ -99,9 +99,9 @@ static writer_t* entity_writer(char const* type, writer_fn writer, writer_t* nex
     return result;
 }
 
-static method_t* resource_method(char const* method, reader_t* readers, writer_t* writers, respond_fn respond, method_t* next)
+static struct method* resource_method(char const* method, struct reader* readers, struct writer* writers, respond_fn respond, struct method* next)
 {
-    method_t* result = malloc(sizeof(method_t));
+    struct method* result = malloc(sizeof(struct method));
     if (result) {
         result->method = method;
         result->readers = readers;
@@ -112,21 +112,21 @@ static method_t* resource_method(char const* method, reader_t* readers, writer_t
     return result;
 }
 
-static void free_readers(reader_t* reader)
+static void free_readers(struct reader* reader)
 {
     if (reader)
         free_readers(reader->next);
     free(reader);
 }
 
-static void free_writers(writer_t* writer)
+static void free_writers(struct writer* writer)
 {
     if (writer)
         free_writers(writer->next);
     free(writer);
 }
 
-static void free_methods(method_t* method)
+static void free_methods(struct method* method)
 {
     if (method) {
         free_readers(method->readers);
@@ -136,13 +136,13 @@ static void free_methods(method_t* method)
     free(method);
 }
 
-static void free_resource(resource_t* resource)
+static void free_resource(struct resource* resource)
 {
     free_methods(resource->methods);
     free(resource);
 }
 
-static void free_routes(route_t* route)
+static void free_routes(struct route* route)
 {
     if (route) {
         free(route->path_route);
@@ -151,7 +151,7 @@ static void free_routes(route_t* route)
     free(route);
 }
 
-static void free_response(response_t* response)
+static void free_response(struct response* response)
 {
     if (response) {
         if (response->allow)
@@ -162,9 +162,9 @@ static void free_response(response_t* response)
     free(response);
 }
 
-static route_t* path_route(path_route_t* route, route_t* next)
+static struct route* path_route(struct path_route* route, struct route* next)
 {
-    route_t* result = malloc(sizeof(route_t));
+    struct route* result = malloc(sizeof(struct route));
     if (result) {
         result->path_route = route;
         result->next = next;
@@ -172,10 +172,10 @@ static route_t* path_route(path_route_t* route, route_t* next)
     return result;
 }
 
-static response_t* not_allowed(method_t* methods)
+static struct response* not_allowed(struct method* methods)
 {
     int first = 1;
-    response_t* response = malloc(sizeof(response_t));
+    struct response* response = malloc(sizeof(struct response));
     response->status = 405;
     response->allow = malloc(128);
     strncpy(response->allow, "Method not allowed", 128);
@@ -191,9 +191,9 @@ static response_t* not_allowed(method_t* methods)
     return response;
 }
 
-static response_t* not_found()
+static struct response* not_found()
 {
-    response_t* response = malloc(sizeof(response_t));
+    struct response* response = malloc(sizeof(struct response));
     response->status = 404;
     response->allow = 0;
     response->entity = 0;
@@ -201,14 +201,14 @@ static response_t* not_found()
     return response;
 }
 
-response_t* handle_request(route_t* routes, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
+struct response* handle_request(struct route* routes, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
 {
-    route_t* route;
-    resource_t* resource = 0;
-    response_t* response;
+    struct route* route;
+    struct resource* resource = 0;
+    struct response* response;
 
     for (route = routes; route; route = route->next) {
-        resource = route_path((path_route_t const*)route->path_route, path);
+        resource = route_path((struct path_route const*)route->path_route, path);
         if (resource) {
             if (response = respond_method(resource->methods, method, path, entity_type, entity, entity_length, accept))
                 return response;

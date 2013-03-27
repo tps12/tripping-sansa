@@ -2,14 +2,13 @@
 
 #include "CUnit/Basic.h"
 
-typedef struct {
-} resource_t;
+struct resource { };
 
 #include "routing/routing.c"
 
 static char** find_args = 0;
 
-static resource_t* find_resource_with_args(char const* path, char const** args)
+static struct resource* find_resource_with_args(char const* path, char const** args)
 {
     int i, n, l;
 
@@ -27,20 +26,20 @@ static resource_t* find_resource_with_args(char const* path, char const** args)
     return 0;
 }
 
-static resource_t* find_resource(char const* path, char const** args)
+static struct resource* find_resource(char const* path, char const** args)
 {
-    static resource_t result;
+    static struct resource result;
     return &result;
 }
 
-static resource_t* dont_find_resource(char const* path, char const** args)
+static struct resource* dont_find_resource(char const* path, char const** args)
 {
     return 0;
 }
 
 static void test_finding_resource(void)
 {
-    path_route_t* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
+    struct path_route* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
         &find_resource, 0));
 
     CU_ASSERT_PTR_NOT_NULL(route_path(route, "some/old/pattern/420"));
@@ -50,7 +49,7 @@ static void test_finding_resource(void)
 
 static void test_finding_second_resource(void)
 {
-    path_route_t* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
+    struct path_route* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
         &dont_find_resource, route_resource(
         &find_resource, 0)));
 
@@ -61,7 +60,7 @@ static void test_finding_second_resource(void)
 
 static void test_resource_not_found(void)
 {
-    path_route_t* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
+    struct path_route* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
         &dont_find_resource, 0));
 
     CU_ASSERT_PTR_NULL(route_path(route, "some/old/pattern/420"));
@@ -72,7 +71,7 @@ static void test_resource_not_found(void)
 static void test_find_arguments(void)
 {
     int i;
-    path_route_t* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
+    struct path_route* route = route_pattern("some/([a-z]+)/pattern/([0-9]+)", route_resource(
         &find_resource_with_args, 0));
 
     route_path(route, "some/old/pattern/420");

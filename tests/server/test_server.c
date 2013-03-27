@@ -7,14 +7,13 @@
 #include "routing/types/route.h"
 #include "server/types/resource.h"
 
-typedef struct path_route_t {
-} path_route_t;
+struct path_route { };
 
-static path_route_t* found_route;
+static struct path_route* found_route;
 
-static resource_t* resource = 0;
+static struct resource* resource = 0;
 
-resource_t* route_path(path_route_t const* route, char const* path)
+struct resource* route_path(struct path_route const* route, char const* path)
 {
     return route == found_route ? resource : 0;
 }
@@ -23,13 +22,13 @@ resource_t* route_path(path_route_t const* route, char const* path)
 
 static int method_called, another_method_called, reader_called, writer_called;
 
-static response_t* method(char const* path, void* data)
+static struct response* method(char const* path, void* data)
 {
     method_called++;
     return 0;
 }
 
-static response_t* another_method(char const* path, void* data)
+static struct response* another_method(char const* path, void* data)
 {
     another_method_called++;
     return 0;
@@ -41,7 +40,7 @@ static void* reader(char const* entity, size_t entity_length)
     return 0;
 }
 
-static response_t* writer(void* data)
+static struct response* writer(void* data)
 {
     writer_called++;
     return 0;
@@ -49,9 +48,9 @@ static response_t* writer(void* data)
 
 static void test_delegating_request_to_resource(void)
 {
-    route_t* routes;
+    struct route* routes;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method("GET", 0, 0, &method, 0));
@@ -70,11 +69,11 @@ static void test_delegating_request_to_resource(void)
 
 static void test_delegating_request_to_second_route(void)
 {
-    route_t* routes;
+    struct route* routes;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(
-        malloc(sizeof(path_route_t)), path_route(
+        malloc(sizeof(struct path_route)), path_route(
         found_route, 0));
 
     resource = resource_define(resource_method("GET", 0, 0, &method, 0));
@@ -93,9 +92,9 @@ static void test_delegating_request_to_second_route(void)
 
 static void test_calls_correct_method(void)
 {
-    route_t* routes;
+    struct route* routes;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -124,8 +123,8 @@ static void test_calls_correct_method(void)
 
 static void test_resource_not_found(void)
 {
-    route_t* routes = path_route(malloc(sizeof(path_route_t)), 0);
-    response_t* response = 0;
+    struct route* routes = path_route(malloc(sizeof(struct path_route)), 0);
+    struct response* response = 0;
 
     resource = resource_define(resource_method("GET", 0, 0, &method, 0));
 
@@ -147,10 +146,10 @@ static void test_resource_not_found(void)
 
 static void test_method_not_supported(void)
 {
-    route_t* routes;
-    response_t* response = 0;
+    struct route* routes;
+    struct response* response = 0;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -180,10 +179,10 @@ static void test_method_not_supported(void)
 
 static void test_not_acceptable(void)
 {
-    route_t* routes;
-    response_t* response = 0;
+    struct route* routes;
+    struct response* response = 0;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -210,9 +209,9 @@ static void test_not_acceptable(void)
 
 static void test_write_type(void)
 {
-    route_t* routes;
+    struct route* routes;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -232,10 +231,10 @@ static void test_write_type(void)
 
 static void test_unsupported_type(void)
 {
-    route_t* routes;
-    response_t* response = 0;
+    struct route* routes;
+    struct response* response = 0;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -262,9 +261,9 @@ static void test_unsupported_type(void)
 
 static void test_read_type(void)
 {
-    route_t* routes;
+    struct route* routes;
 
-    found_route = malloc(sizeof(path_route_t));
+    found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
     resource = resource_define(resource_method(
@@ -282,11 +281,34 @@ static void test_read_type(void)
     free_routes(routes);
 }
 
-static void test_response_status(void)
+static void test_response_without_entity(void)
 {
+    struct route* routes;
+    struct response* response = 0;
+
+    found_route = malloc(sizeof(struct path_route));
+    routes = path_route(found_route, 0);
+
+    resource = resource_define(resource_method("DELETE", 0, 0, &method, 0));
+
+    method_called = 0;
+
+    response = handle_request(routes, "DELETE", "something", 0, 0, 0, 0);
+    CU_ASSERT_TRUE_FATAL(method_called);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(response);
+    CU_ASSERT_EQUAL(response->entity_length, 0);
+    CU_ASSERT_PTR_NULL(response->entity);
+    CU_ASSERT_EQUAL(response->status, 204);
+
+    free_response(response);
+
+    free_resource(resource);
+    resource = 0;
+
+    free_routes(routes);
 }
 
-static void test_response_entity(void)
+static void test_response_with_entity(void)
 {
 }
 

@@ -3,23 +3,23 @@
 
 #include "routing/types/route.h"
 
-typedef resource_t* (*find_resource_fn)(char const* path, char const** args);
+typedef struct resource* (*find_resource_fn)(char const* path, char const** args);
 
-typedef struct route_finder_t {
+struct route_finder {
     find_resource_fn finder;
-    struct route_finder_t* next;
-} route_finder_t;
+    struct route_finder* next;
+};
 
-typedef struct {
+struct path_route {
     regex_t regex;
-    route_finder_t* finders;
-} path_route_t;
+    struct route_finder* finders;
+};
 
-path_route_t* route_pattern(char const* pattern, route_finder_t* finders)
+struct path_route* route_pattern(char const* pattern, struct route_finder* finders)
 {
     int result;
 
-    path_route_t* route = malloc(sizeof(path_route_t));
+    struct path_route* route = malloc(sizeof(struct path_route));
     if (route) {
         result = regcomp(&route->regex, pattern, REG_EXTENDED);
         if (result) {
@@ -32,9 +32,9 @@ path_route_t* route_pattern(char const* pattern, route_finder_t* finders)
     return route;
 }
 
-route_finder_t* route_resource(find_resource_fn find_resource, route_finder_t* next)
+struct route_finder* route_resource(find_resource_fn find_resource, struct route_finder* next)
 {
-    route_finder_t* result = malloc(sizeof(route_finder_t));
+    struct route_finder* result = malloc(sizeof(struct route_finder));
     if (result) {
         result->finder = find_resource;
         result->next = next;
@@ -42,13 +42,13 @@ route_finder_t* route_resource(find_resource_fn find_resource, route_finder_t* n
     return result;
 }
 
-resource_t* route_path(path_route_t const* route, char const* path)
+struct resource* route_path(struct path_route const* route, char const* path)
 {
     int i, len, match_count, failed;
     regmatch_t* matches = 0;
     char** args = 0;
-    route_finder_t* finder;
-    resource_t* resource = 0;
+    struct route_finder* finder;
+    struct resource* resource = 0;
 
     match_count = 1 + route->regex.re_nsub;
     matches = calloc(match_count, sizeof(regmatch_t));
@@ -88,14 +88,14 @@ resource_t* route_path(path_route_t const* route, char const* path)
     return resource;
 }
 
-static void free_finders(route_finder_t* finder)
+static void free_finders(struct route_finder* finder)
 {
     if (finder)
         free_finders(finder->next);
     free(finder);
 }
 
-void free_route(path_route_t* route)
+void free_route(struct path_route* route)
 {
     regfree(&route->regex);
     free_finders(route->finders);

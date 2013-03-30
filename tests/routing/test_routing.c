@@ -94,7 +94,7 @@ int main()
     if (CUE_SUCCESS != CU_initialize_registry())
         goto didnt_even_fail;
 
-    suite = CU_add_suite("suite", 0, 0);
+    suite = CU_add_suite("routing", 0, 0);
     if (!suite)
         goto failed;
 

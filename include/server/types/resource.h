@@ -1,13 +1,15 @@
 #ifndef __INCLUDE_SERVER_TYPES_RESOURCE_H__
 #define __INCLUDE_SERVER_TYPES_RESOURCE_H__
 
+struct entity;
 struct response;
+struct result;
 
-typedef struct response* (*respond_fn)(char const* path, void* data);
+typedef struct result* (*respond_fn)(char const* path, void* data);
 
 typedef void* (*reader_fn)(char const* entity, size_t entity_length);
 
-typedef struct response* (*writer_fn)(void* data);
+typedef struct entity* (*writer_fn)(void* data);
 
 struct reader {
     char const* type;

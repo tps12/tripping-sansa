@@ -9,7 +9,7 @@ config.status
 depcomp
 install-sh
 missing
-src/.deps/
-src/.dirstamp
+.deps/
+.dirstamp
 *.o
 vendor/share/

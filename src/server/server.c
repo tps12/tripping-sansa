@@ -27,7 +27,7 @@ static struct entity* build_entity(char* body)
 
     if (entity) {
         entity->data = body;
-        entity->length = body ? strnlen(body, 8 * 1024) : 0;
+        entity->length = body ? strlen(body) : 0;
     }
 
     return entity;
@@ -277,7 +277,7 @@ static struct response* not_allowed(struct method* methods)
         for ( ; methods; methods = methods->next) {
             if (!first)
                 strncat(allow, ", ", 2);
-            strncat(allow, methods->method, 128 - (strnlen(allow, 128)));
+            strncat(allow, methods->method, 128 - (strlen(allow)));
             first = 0;
         }
         return build_response(405, allow, 0, "text/plain", build_entity(body));

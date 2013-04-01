@@ -17,7 +17,7 @@ static struct resource* find_resource_with_args(char const* path, char const** a
             ;
         find_args = calloc(n + 1, sizeof(char*));
         for (i = 0; i < n; i++) {
-            l = strnlen(args[i], 2048) + 1;
+            l = strlen(args[i]) + 1;
             find_args[i] = calloc(l, sizeof(char));
             strncpy(find_args[i], args[i], l);
         }

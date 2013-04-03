@@ -3,6 +3,6 @@
 
 struct result;
 
-struct result* success_result(char* entity, char* location);
+struct result* success_result(char* entity, void (*free_data)(void* data), char* location);
 
 #endif

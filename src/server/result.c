@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "server/types/result.h"
 
 static struct result* init_result(char* error, void* data, void (*free_data)(void* data), char* location)

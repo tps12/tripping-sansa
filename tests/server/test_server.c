@@ -6,6 +6,7 @@
 #include "test_helpers.h"
 
 #include "routing/types/route.h"
+#include "server/types/found_resource.h"
 #include "server/types/resource.h"
 
 struct path_route { };
@@ -14,9 +15,16 @@ static struct path_route* found_route;
 
 static struct resource* resource = 0;
 
-struct resource* route_path(struct path_route const* route, char const* path)
+struct found_resource* route_path(struct path_route const* route, char const* path)
 {
-    return route == found_route ? resource : 0;
+    static struct found_resource result = { 0, 0 };
+
+    if (route == found_route) {
+        result.resource = resource;
+        return &result;
+    }
+    else
+        return 0;
 }
 
 #include "server/server.c"
@@ -29,14 +37,14 @@ static struct entity* writer_entity = 0;
 
 static struct result result = { 0, 0, 0, 0 };
 
-static struct result* method(char const* path, void* data)
+static struct result* method(char const* path, void* resource_data, void* data)
 {
     method_called++;
     result.data = result_data;
     return &result;
 }
 
-static struct result* another_method(char const* path, void* data)
+static struct result* another_method(char const* path, void* resource_data, void* data)
 {
     another_method_called++;
     result.data = result_data;

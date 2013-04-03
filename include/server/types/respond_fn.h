@@ -3,6 +3,6 @@
 
 struct result;
 
-typedef struct result* (*respond_fn)(char const* path, void* data);
+typedef struct result* (*respond_fn)(char const* path, void* resource_data, void* data);
 
 #endif

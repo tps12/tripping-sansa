@@ -2,13 +2,13 @@
 
 #include "CUnit/Basic.h"
 
-struct resource { };
+struct found_resource { };
 
 #include "routing/routing.c"
 
 static char** find_args = 0;
 
-static struct resource* find_resource_with_args(char const* path, char const** args)
+static struct found_resource* find_resource_with_args(char const* path, char const** args)
 {
     int i, n, l;
 
@@ -26,13 +26,13 @@ static struct resource* find_resource_with_args(char const* path, char const** a
     return 0;
 }
 
-static struct resource* find_resource(char const* path, char const** args)
+static struct found_resource* find_resource(char const* path, char const** args)
 {
-    static struct resource result;
+    static struct found_resource result;
     return &result;
 }
 
-static struct resource* dont_find_resource(char const* path, char const** args)
+static struct found_resource* dont_find_resource(char const* path, char const** args)
 {
     return 0;
 }

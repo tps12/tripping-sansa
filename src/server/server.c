@@ -5,6 +5,7 @@
 
 #include "routing/functions/route_path.h"
 
+#include "server/types/found_resource.h"
 #include "server/types/resource.h"
 #include "server/types/result.h"
 #include "server/types/entity.h"
@@ -114,14 +115,14 @@ static struct response* bad_request(char* error)
     return 0;
 }
 
-static struct response* respond_and_write(char const* path, void* data, respond_fn respond, struct writer* writers, char const* accept_type)
+static struct response* respond_and_write(char const* path, void* resource_data, void* data, respond_fn respond, struct writer* writers, char const* accept_type)
 {
     struct result* result = 0;
     struct response* response = 0;
     struct writer* writer;
 
     if (!writers) {
-        if (result = respond(path, data)) {
+        if (result = respond(path, resource_data, data)) {
             response = result->error ? bad_request(result->error) :
                 result->data ? internal_error() :
                 success(0, 0, result->location);
@@ -133,7 +134,7 @@ static struct response* respond_and_write(char const* path, void* data, respond_
 
     for (writer = writers; writer; writer = writer->next)
         if (!strncmp(writer->type, accept_type, 256)) {
-            if (result = respond(path, data)) {
+            if (result = respond(path, resource_data, data)) {
                 response = result->error ? bad_request(result->error) :
                     result->data ? success(writer->type, writer->writer(result->data), result->location) :
                     internal_error();
@@ -146,23 +147,23 @@ static struct response* respond_and_write(char const* path, void* data, respond_
     return not_acceptable(writers);
 }
 
-static struct response* read_and_respond(struct reader* readers, respond_fn respond, char const* path, char const* entity_type, char const* entity, size_t entity_length, struct writer* writers, char const* accept)
+static struct response* read_and_respond(struct reader* readers, respond_fn respond, char const* path, void* data, char const* entity_type, char const* entity, size_t entity_length, struct writer* writers, char const* accept)
 {
     struct reader* reader;
     if (!readers)
-        return respond_and_write(path, 0, respond, writers, accept);
+        return respond_and_write(path, data, 0, respond, writers, accept);
     for (reader = readers; reader; reader = reader->next)
         if (!strncmp(reader->type, entity_type, 256))
-            return respond_and_write(path, reader->reader(entity, entity_length), respond, writers, accept);
+            return respond_and_write(path, data, reader->reader(entity, entity_length), respond, writers, accept);
     return unsupported_type(readers);
 }
 
-static struct response* respond_method(struct method* resource_method, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
+static struct response* respond_method(struct method* resource_method, char const* method, char const* path, void* data, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
 {
     return resource_method ?
         (!strncmp(resource_method->method, method, 16) ?
-            read_and_respond(resource_method->readers, resource_method->respond, path, entity_type, entity, entity_length, resource_method->writers, accept) :
-            respond_method(resource_method->next, method, path, entity_type, entity, entity_length, accept)) :
+            read_and_respond(resource_method->readers, resource_method->respond, path, data, entity_type, entity, entity_length, resource_method->writers, accept) :
+            respond_method(resource_method->next, method, path, data, entity_type, entity, entity_length, accept)) :
         0;
 }
 
@@ -301,16 +302,16 @@ static struct response* not_found()
 struct response* handle_request(struct route* routes, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)
 {
     struct route* route;
-    struct resource* resource = 0;
+    struct found_resource* resource = 0;
     struct response* response;
 
     for (route = routes; route; route = route->next) {
         resource = route_path((struct path_route const*)route->path_route, path);
         if (resource) {
-            if (response = respond_method(resource->methods, method, path, entity_type, entity, entity_length, accept))
+            if (response = respond_method(resource->resource->methods, method, path, resource->data, entity_type, entity, entity_length, accept))
                 return response;
             else
-                return not_allowed(resource->methods);
+                return not_allowed(resource->resource->methods);
         }
     }
 

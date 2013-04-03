@@ -43,13 +43,13 @@ struct route_finder* route_resource(find_resource_fn find_resource, struct route
     return result;
 }
 
-struct resource* route_path(struct path_route const* route, char const* path)
+struct found_resource* route_path(struct path_route const* route, char const* path)
 {
     int i, len, match_count, failed;
     regmatch_t* matches = 0;
     char** args = 0;
     struct route_finder* finder;
-    struct resource* resource = 0;
+    struct found_resource* resource = 0;
 
     match_count = 1 + route->regex.re_nsub;
     matches = calloc(match_count, sizeof(regmatch_t));

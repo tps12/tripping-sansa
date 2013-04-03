@@ -2,9 +2,8 @@ heroku_app = cervice
 
 bin_PROGRAMS = $(heroku_app)
 AM_CPPFLAGS = -I$(top_srcdir)/include
-SUBDIRS = tests
 
-cervice_SOURCES = src/minimal_example.c
+cervice_SOURCES = src/app.c src/adapters/libmicrohttpd.c src/routing/routing.c src/server/result.c src/server/server.c
 cervice_CFLAGS = $(DEPS_CFLAGS) -std=c89 -Werror
 cervice_LDADD = $(DEPS_LIBS)
 

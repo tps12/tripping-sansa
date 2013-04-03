@@ -1,4 +1,10 @@
+#include <stdlib.h>
+#include <string.h>
+
 #include "routing/types/route.h"
+
+#include "routing/functions/route_path.h"
+
 #include "server/types/resource.h"
 #include "server/types/result.h"
 #include "server/types/entity.h"
@@ -21,7 +27,7 @@ static struct response* build_response(int status, char* allow, char* location, 
     return response;
 }
 
-static struct entity* build_entity(char* body)
+struct entity* build_entity(char* body)
 {
     struct entity* entity = malloc(sizeof(struct entity));
 
@@ -160,7 +166,7 @@ static struct response* respond_method(struct method* resource_method, char cons
         0;
 }
 
-static struct resource* resource_define(struct method* methods)
+struct resource* resource_define(struct method* methods)
 {
     struct resource* result = malloc(sizeof(struct resource));
     if (result)
@@ -168,7 +174,7 @@ static struct resource* resource_define(struct method* methods)
     return result;
 }
 
-static struct reader* entity_reader(char const* type, reader_fn reader, struct reader* next)
+struct reader* entity_reader(char const* type, reader_fn reader, struct reader* next)
 {
     struct reader* result = malloc(sizeof(struct reader));
     if (result) {
@@ -179,7 +185,7 @@ static struct reader* entity_reader(char const* type, reader_fn reader, struct r
     return result;
 }
 
-static struct writer* entity_writer(char const* type, writer_fn writer, struct writer* next)
+struct writer* entity_writer(char const* type, writer_fn writer, struct writer* next)
 {
     struct writer* result = malloc(sizeof(struct writer));
     if (result) {
@@ -190,7 +196,7 @@ static struct writer* entity_writer(char const* type, writer_fn writer, struct w
     return result;
 }
 
-static struct method* resource_method(char const* method, struct reader* readers, struct writer* writers, respond_fn respond, struct method* next)
+struct method* resource_method(char const* method, struct reader* readers, struct writer* writers, respond_fn respond, struct method* next)
 {
     struct method* result = malloc(sizeof(struct method));
     if (result) {
@@ -227,13 +233,13 @@ static void free_methods(struct method* method)
     free(method);
 }
 
-static void free_resource(struct resource* resource)
+void free_resource(struct resource* resource)
 {
     free_methods(resource->methods);
     free(resource);
 }
 
-static void free_routes(struct route* route)
+void free_routes(struct route* route)
 {
     if (route) {
         free(route->path_route);
@@ -242,7 +248,7 @@ static void free_routes(struct route* route)
     free(route);
 }
 
-static void free_response(struct response* response)
+void free_response(struct response* response)
 {
     if (response) {
         if (response->allow)
@@ -255,7 +261,7 @@ static void free_response(struct response* response)
     free(response);
 }
 
-static struct route* path_route(struct path_route* route, struct route* next)
+struct route* path_route(struct path_route* route, struct route* next)
 {
     struct route* result = malloc(sizeof(struct route));
     if (result) {

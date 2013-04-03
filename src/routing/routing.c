@@ -1,9 +1,10 @@
 #include <regex.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "routing/types/find_resource_fn.h"
 #include "routing/types/route.h"
-
-typedef struct resource* (*find_resource_fn)(char const* path, char const** args);
 
 struct route_finder {
     find_resource_fn finder;

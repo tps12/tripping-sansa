@@ -3,6 +3,7 @@
 
 #include "routing/types/route.h"
 
+#include "routing/functions/free_route.h"
 #include "routing/functions/route_path.h"
 
 #include "server/types/found_resource.h"
@@ -167,11 +168,13 @@ static struct response* respond_method(struct method* resource_method, char cons
         0;
 }
 
-struct resource* resource_define(struct method* methods)
+struct resource* resource_define(find_resource_fn find, struct method* methods)
 {
     struct resource* result = malloc(sizeof(struct resource));
-    if (result)
+    if (result) {
+        result->find = find;
         result->methods = methods;
+    }
     return result;
 }
 
@@ -243,7 +246,7 @@ void free_resource(struct resource* resource)
 void free_routes(struct route* route)
 {
     if (route) {
-        free(route->path_route);
+        free_route(route->path_route);
         free_routes(route->next);
     }
     free(route);
@@ -303,17 +306,23 @@ struct response* handle_request(struct route* routes, char const* method, char c
 {
     struct route* route;
     struct found_resource* resource = 0;
-    struct response* response;
+    struct response* response = 0;
 
     for (route = routes; route; route = route->next) {
         resource = route_path((struct path_route const*)route->path_route, path);
         if (resource) {
-            if (response = respond_method(resource->resource->methods, method, path, resource->data, entity_type, entity, entity_length, accept))
-                return response;
-            else
-                return not_allowed(resource->resource->methods);
+            response = respond_method(resource->resource->methods, method, path, resource->data, entity_type, entity, entity_length, accept);
+            if (!response)
+                response = not_allowed(resource->resource->methods);
+            break;
         }
     }
+    if (resource && resource->free_data)
+        resource->free_data(resource->data);
+    free(resource);
 
-    return not_found();
+    if (!response)
+        response = not_found();
+
+    return response;
 }

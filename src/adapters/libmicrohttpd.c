@@ -88,6 +88,7 @@ static int access_handler(void *cls,
             ret = MHD_queue_response(connection, response->status, mhd_response);
 
             MHD_destroy_response(mhd_response);
+            free(entity);
             free_response(response);
 
             return ret;

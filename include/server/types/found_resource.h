@@ -6,6 +6,7 @@ struct resource;
 struct found_resource {
     struct resource* resource;
     void* data;
+    void (*free_data)(void* data);
 };
 
 #endif

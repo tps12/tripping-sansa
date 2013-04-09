@@ -17,17 +17,24 @@ static struct resource* resource = 0;
 
 struct found_resource* route_path(struct path_route const* route, char const* path)
 {
-    static struct found_resource result = { 0, 0 };
+    struct found_resource* result = 0;
 
     if (route == found_route) {
-        result.resource = resource;
-        return &result;
+        result = malloc(sizeof(struct found_resource));
+        result->resource = resource;
+        result->data = 0;
+        result->free_data = 0;
     }
-    else
-        return 0;
+
+    return result;
 }
 
 #include "server/server.c"
+
+void free_route(struct path_route* route)
+{
+    free(route);
+}
 
 static int method_called, another_method_called, reader_called, writer_called, free_result_called;
 
@@ -76,7 +83,7 @@ static void test_delegating_request_to_resource(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method("GET", 0, 0, &method, 0));
+    resource = resource_define(0, resource_method("GET", 0, 0, &method, 0));
 
     method_called = 0;
 
@@ -99,7 +106,7 @@ static void test_delegating_request_to_second_route(void)
         malloc(sizeof(struct path_route)), path_route(
         found_route, 0));
 
-    resource = resource_define(resource_method("GET", 0, 0, &method, 0));
+    resource = resource_define(0, resource_method("GET", 0, 0, &method, 0));
 
     method_called = 0;
 
@@ -120,7 +127,7 @@ static void test_calls_correct_method(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, 0, &method, resource_method(
         "PUT", 0, 0, &another_method, 0)));
 
@@ -149,7 +156,7 @@ static void test_resource_not_found(void)
     struct route* routes = path_route(malloc(sizeof(struct path_route)), 0);
     struct response* response = 0;
 
-    resource = resource_define(resource_method("GET", 0, 0, &method, 0));
+    resource = resource_define(0, resource_method("GET", 0, 0, &method, 0));
 
     method_called = 0;
 
@@ -176,7 +183,7 @@ static void test_method_not_supported(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, 0, &method, resource_method(
         "PUT", 0, 0, &another_method, 0)));
 
@@ -210,7 +217,7 @@ static void test_not_acceptable(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
 
     method_called = writer_called = 0;
@@ -241,7 +248,7 @@ static void test_write_type(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
 
     result_data = &data;
@@ -265,7 +272,7 @@ static void test_unsupported_type(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "PUT", entity_reader("some/required-type", &reader, 0), 0, &method, 0));
 
     method_called = reader_called = 0;
@@ -295,7 +302,7 @@ static void test_read_type(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "PUT", entity_reader("some/required-type", &reader, 0), 0, &method, 0));
 
     reader_called = 0;
@@ -320,7 +327,7 @@ static void test_response_with_data(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
 
     entity->data = malloc(7);
@@ -354,7 +361,7 @@ static void test_response_with_unexpected_data(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "DELETE", 0, 0, &method, 0));
 
     result_data = &data;
@@ -383,7 +390,7 @@ static void test_response_without_data(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "DELETE", 0, 0, &method, 0));
 
     result_data = 0;
@@ -413,7 +420,7 @@ static void test_response_without_expected_data(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
 
     writer_called = 0;
@@ -443,7 +450,7 @@ static void test_response_location(void)
     found_route = malloc(sizeof(struct path_route));
     routes = path_route(found_route, 0);
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "POST", 0, 0, &method, 0));
 
     result_data = 0;
@@ -477,7 +484,7 @@ static void test_response_to_bad_request(void)
     result.location = 0;
     free_result_called = 0;
 
-    resource = resource_define(resource_method(
+    resource = resource_define(0, resource_method(
         "PUT", 0, entity_writer("some/required-type", &writer, 0), &method, 0));
 
     response = handle_request(routes, "PUT", "something", 0, 0, 0, "some/required-type");

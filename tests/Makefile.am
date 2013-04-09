@@ -1,8 +1,10 @@
-bin_PROGRAMS = test_routing test_result test_server
+bin_PROGRAMS = test_resource test_routing test_result test_server
 
 AM_CFLAGS = -std=c89 -Werror
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
 LDADD = -lcunit
+
+test_resource_SOURCES = resource/test_resource.c
 
 test_routing_SOURCES = routing/test_routing.c
 

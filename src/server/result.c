@@ -6,9 +6,6 @@ static struct result* init_result(char* error, void* data, void (*free_data)(voi
 {
     struct result* result = 0;
 
-    if (data && !free_data)
-        return 0;
-
     result = malloc(sizeof(struct result));
     if (result) {
         result->error = error;
@@ -32,7 +29,7 @@ struct result* success_result(void* data, void (*free_data)(void* data), char* l
 void free_result(struct result* result)
 {
     if (result) {
-        if (result->data)
+        if (result->free_data)
             result->free_data(result->data);
 
         free(result->error);

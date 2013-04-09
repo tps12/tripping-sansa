@@ -4,6 +4,9 @@
 
 #include "adapters/libmicrohttpd.h"
 
+#include "resource/functions/found_resource.h"
+#include "resource/functions/resource_not_found.h"
+
 #include "routing/functions/route_pattern.h"
 #include "routing/functions/route_resource.h"
 
@@ -18,23 +21,12 @@
 #include "server/functions/resource_method.h"
 #include "server/functions/success_result.h"
 
-#include "server/types/found_resource.h"
-
 #define PAGE "<html><head><title>hello</title></head><body>there</body></html>"
 #define EVEN "<html><head><title>hello</title></head><body>%d</body></html>"
 
-static struct resource* hello;
-
-static struct found_resource* find_hello(char const* path, char const** args)
+static struct find_result* find_hello(char const* path, char const** args)
 {
-    struct found_resource* resource = malloc(sizeof(struct found_resource));
-
-    if (resource) {
-        resource->data = 0;
-        resource->resource = hello;
-    }
-
-    return resource;
+    return found_resource(0, 0);
 }
 
 static struct result* get_hello(char const* path, void* resource_data, void* data)
@@ -85,24 +77,23 @@ static struct entity* write_hello(void* data)
 
 static struct resource* even;
 
-static struct found_resource* find_even(char const* path, char const** args)
+static struct find_result* find_even(char const* path, char const** args)
 {
-    struct found_resource* resource;
+    int* data = 0;
     int value = atoi(args[0]);
 
     if (!(value % 2)) {
-        resource = malloc(sizeof(struct found_resource));
+        data = malloc(sizeof(int));
 
-        if (resource) {
-            resource->data = malloc(sizeof(int));
-            *((int*)resource->data) = value;
-            resource->resource = even;
+        if (data) {
+            *data = value;
+            return found_resource(data, &free);
         }
+        else
+            return 0;
     }
     else
-        resource = 0;
-
-    return resource;
+        return resource_not_found();
 }
 
 static struct result* get_even(char const* path, void* value, void* data)
@@ -126,7 +117,7 @@ static struct entity* write_even(void* data)
     char* body = malloc(strlen((char*)data) + 1);
 
     if (body) {
-        strncpy(body, data, strlen((char*)data));
+        strncpy(body, data, strlen((char*)data) + 1);
         return build_entity(body);
     }
 
@@ -145,26 +136,24 @@ int main(int argc, char const** argv)
     }
     port = atoi(argv[1]);
 
-    hello = resource_define(
-      resource_method("GET", 0, entity_writer("text/html", &write_hello, 0), &get_hello,
-      resource_method("PUT", entity_reader("text/plain", &read_hello, 0), 0, &put_hello,
-      resource_method("POST", 0, 0, &post_hello,
-    0))));
-
-    even = resource_define(
-      resource_method("GET", 0, entity_writer("text/html", &write_even, 0), &get_even,
-    0));
-
     routes =
-      path_route(route_pattern("^/hello$", route_resource(&find_hello, 0)),
-      path_route(route_pattern("^/evens/([0-9]+)$", route_resource(&find_even, 0)),
+        path_route(route_pattern("^/hello$",
+            route_resource(resource_define(&find_hello,
+                resource_method("GET", 0, entity_writer("text/html", &write_hello, 0), &get_hello,
+                resource_method("PUT", entity_reader("text/plain", &read_hello, 0), 0, &put_hello,
+                resource_method("POST", 0, 0, &post_hello,
+            0)))),
+        0)),
+        path_route(route_pattern("^/evens/([0-9]+)$",
+            route_resource(resource_define(&find_even,
+                resource_method("GET", 0, entity_writer("text/html", &write_even, 0), &get_even,
+            0)),
+        0)),
     0));
 
     run_app(port, routes);
 
     free_routes(routes);
-
-    free_resource(hello);
 
     return 0;
 }

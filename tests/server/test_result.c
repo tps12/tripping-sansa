@@ -66,12 +66,16 @@ static void test_success_with_entity(void)
 
 static void test_entity_without_free(void)
 {
-    char* data = malloc(32);
-    sprintf(data, "some entity data");
+    char data[] = "some entity data";
+    struct result* result = 0;
 
-    CU_ASSERT_PTR_NULL(success_result((void*)data, 0, 0));
+    free_called_with = 0;
 
-    free(data);
+    result = success_result((void*)data, 0, 0);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(result);
+
+    free_result(result);
+    CU_ASSERT_PTR_NULL(free_called_with);
 }
 
 static void test_free_result(void)

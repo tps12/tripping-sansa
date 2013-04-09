@@ -1,6 +1,7 @@
 #ifndef __INCLUDE_SERVER_TYPES_RESOURCE_H__
 #define __INCLUDE_SERVER_TYPES_RESOURCE_H__
 
+#include "routing/types/find_resource_fn.h"
 #include "server/types/reader_fn.h"
 #include "server/types/respond_fn.h"
 #include "server/types/writer_fn.h"
@@ -30,6 +31,7 @@ struct method {
 };
 
 struct resource {
+    find_resource_fn find;
     struct method* methods;
 };
 

@@ -3,11 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "resource/functions/find_resource.h"
+#include "resource/functions/free_resource.h"
+
 #include "routing/types/find_resource_fn.h"
 #include "routing/types/route.h"
 
 struct route_finder {
-    find_resource_fn finder;
+    struct resource* resource;
     struct route_finder* next;
 };
 
@@ -33,11 +36,11 @@ struct path_route* route_pattern(char const* pattern, struct route_finder* finde
     return route;
 }
 
-struct route_finder* route_resource(find_resource_fn find_resource, struct route_finder* next)
+struct route_finder* route_resource(struct resource* resource, struct route_finder* next)
 {
     struct route_finder* result = malloc(sizeof(struct route_finder));
     if (result) {
-        result->finder = find_resource;
+        result->resource = resource;
         result->next = next;
     }
     return result;
@@ -77,7 +80,7 @@ struct found_resource* route_path(struct path_route const* route, char const* pa
 
         if (!failed) {
             for (finder = route->finders; finder; finder = finder->next)
-                if (resource = finder->finder(path, (char const**)args))
+                if (resource = find_resource(finder->resource, path, (char const**)args))
                     break;
             for (i = 0; i < match_count; i++)
                 free(args[i]);
@@ -91,8 +94,10 @@ struct found_resource* route_path(struct path_route const* route, char const* pa
 
 static void free_finders(struct route_finder* finder)
 {
-    if (finder)
+    if (finder) {
+        free_resource(finder->resource);
         free_finders(finder->next);
+    }
     free(finder);
 }
 

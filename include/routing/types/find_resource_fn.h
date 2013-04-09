@@ -1,8 +1,8 @@
 #ifndef __INCLUDE_ROUTING_TYPES_FIND_RESOURCE_FN_H__
 #define __INCLUDE_ROUTING_TYPES_FIND_RESOURCE_FN_H__
 
-struct found_resource;
+struct find_result;
 
-typedef struct found_resource* (*find_resource_fn)(char const* path, char const** args);
+typedef struct find_result* (*find_resource_fn)(char const* path, char const** args);
 
 #endif

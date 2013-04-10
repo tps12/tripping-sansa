@@ -21,3 +21,7 @@ int match_regex(char const* input, char const* pattern)
         CU_FAIL("Regex compilation errored");
     return 0;
 }
+
+void log_error(char const* fmt, ...) { }
+
+void log_info(char const* fmt, ...) { }

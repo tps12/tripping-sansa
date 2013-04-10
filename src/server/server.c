@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "logging.h"
+
 #include "routing/types/route.h"
 
 #include "routing/functions/free_route.h"
@@ -145,6 +147,7 @@ static struct response* respond_and_write(char const* path, void* resource_data,
             return 0;
         }
 
+    log_info("No matching type in Accept '%s'\n", accept_type);
     return not_acceptable(writers);
 }
 

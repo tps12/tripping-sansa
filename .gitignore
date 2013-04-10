@@ -6,6 +6,7 @@ autom4te.cache/
 cervice
 config.log
 config.status
+configure
 depcomp
 install-sh
 missing
@@ -13,3 +14,4 @@ missing
 .dirstamp
 *.o
 vendor/share/
+tests/bin

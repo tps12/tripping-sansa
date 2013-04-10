@@ -230,7 +230,6 @@ static void test_not_acceptable(void)
     CU_ASSERT_NOT_EQUAL_FATAL(response->entity_length, 0);
     CU_ASSERT_STRING_MATCH(response->entity, "some/provided-type");
     CU_ASSERT_STRING_EQUAL(response->entity_type, "text/plain");
-    CU_ASSERT_EQUAL(response->status, 406);
 
     free_response(response);
 
@@ -240,6 +239,62 @@ static void test_not_acceptable(void)
     free_routes(routes);
 }
 
+static void test_accept_multiple(void)
+{
+    char data[] = "some data";
+    struct route* routes;
+
+    found_route = malloc(sizeof(struct path_route));
+    routes = path_route(found_route, 0);
+
+    resource = resource_define(0, resource_method(
+        "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
+
+    result_data = &data;
+    writer_called = 0;
+
+    free_response(handle_request(routes, "GET", "something", 0, 0, 0,
+        "text/html,some/provided-type;q=0.95,application/xhtml+xml,application/xml;q=0.9"));
+
+    CU_ASSERT_TRUE(writer_called);
+
+    free_resource(resource);
+    resource = 0;
+
+    free_routes(routes);
+}
+
+static void test_accept_wildcard(void)
+{
+    struct route* routes;
+    struct response* response = 0;
+
+    found_route = malloc(sizeof(struct path_route));
+    routes = path_route(found_route, 0);
+
+    resource = resource_define(0, resource_method(
+        "GET", 0, entity_writer("some/provided-type", &writer, 0), &method, 0));
+
+    method_called = writer_called = 0;
+
+    response = handle_request(routes, "GET", "something", 0, 0, 0,
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+
+    CU_ASSERT_FALSE(method_called);
+    CU_ASSERT_FALSE(writer_called);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(response);
+    CU_ASSERT_NOT_EQUAL_FATAL(response->entity_length, 0);
+    CU_ASSERT_STRING_MATCH(response->entity, "some/provided-type");
+    CU_ASSERT_STRING_EQUAL(response->entity_type, "text/plain");
+    CU_ASSERT_EQUAL(response->status, 406);
+
+    free_response(response);
+
+    free_resource(resource);
+    resource = 0;
+
+    free_routes(routes);
+}
 static void test_write_type(void)
 {
     char data[] = "some data";
@@ -523,6 +578,8 @@ int main()
         !CU_ADD_TEST(suite, test_unsupported_type) ||
         !CU_ADD_TEST(suite, test_read_type) ||
         !CU_ADD_TEST(suite, test_not_acceptable) ||
+        !CU_ADD_TEST(suite, test_accept_multiple) ||
+        !CU_ADD_TEST(suite, test_accept_wildcard) ||
         !CU_ADD_TEST(suite, test_write_type) ||
         !CU_ADD_TEST(suite, test_response_with_data) ||
         !CU_ADD_TEST(suite, test_response_with_unexpected_data) ||

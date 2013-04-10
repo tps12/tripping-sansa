@@ -118,10 +118,69 @@ static struct response* bad_request(char* error)
     return 0;
 }
 
+static int count_commas(char const* string)
+{
+    int i, n = 0;
+    if (string)
+        for (i = 0; string[i]; i++)
+            if (string[i] == ',')
+                n++;
+    return n;
+}
+
+static void free_strings(char** strings)
+{
+    int i;
+    for (i = 0; strings[i]; i++)
+        free(strings[i]);
+    free(strings);
+}
+
+static char** split_accept(char const* accept_string)
+{
+    int i, j, len, n = count_commas(accept_string);
+    char** types = calloc(n + 2, sizeof(char *));
+    char* current;
+
+    if (types) {
+        current = (char*)accept_string;
+        for (i = 0; i < n + 1; i++) {
+            while (current && isspace(*current))
+                current++;
+            len = 0;
+            if (current)
+                while (current[len] && current[len] != ',' && current[len] != ';')
+                    len++;
+            for (j = len; current && isspace(current[j]); j--)
+                ;
+            types[i] = malloc(j+1);
+            if (!types[i]) {
+                free_strings(types);
+                types = 0;
+                break;
+            }
+            if (current)
+                strncpy(types[i], current, j);
+            types[i][j] = 0;
+            if (current) {
+                while (current[len] && current[len] != ',')
+                    len++;
+                current += len + 1;
+            }
+        }
+    }
+
+    if (!types)
+        log_error("Couldn't allocate space for accept types");
+    return types;
+}
+
 static struct response* respond_and_write(char const* path, void* resource_data, void* data, respond_fn respond, struct writer* writers, char const* accept_type)
 {
     struct result* result = 0;
     struct response* response = 0;
+    char** accept_types = 0;
+    int i;
     struct writer* writer;
 
     if (!writers) {
@@ -135,17 +194,24 @@ static struct response* respond_and_write(char const* path, void* resource_data,
         return 0;
     }
 
-    for (writer = writers; writer; writer = writer->next)
-        if (!strncmp(writer->type, accept_type, 256)) {
-            if (result = respond(path, resource_data, data)) {
-                response = result->error ? bad_request(result->error) :
-                    result->data ? success(writer->type, writer->writer(result->data), result->location) :
-                    internal_error();
-                free_result(result);
-                return response;
+    for (writer = writers; writer; writer = writer->next) {
+        accept_types = split_accept(accept_type);
+        for (i = 0; accept_types[i]; i++) {
+            if (!strncmp(writer->type, accept_types[i], 256)) {
+                if (result = respond(path, resource_data, data)) {
+                    response = result->error ? bad_request(result->error) :
+                        result->data ? success(writer->type, writer->writer(result->data), result->location) :
+                        internal_error();
+                    free_result(result);
+                    free_strings(accept_types);
+                    return response;
+                }
+                free_strings(accept_types);
+                return 0;
             }
-            return 0;
         }
+        free_strings(accept_types);
+    }
 
     log_info("No matching type in Accept '%s'\n", accept_type);
     return not_acceptable(writers);

@@ -21,6 +21,9 @@ $(vulcan_dir)/bin: $(vulcan_dir)
 $(vulcan_dir)/lib: $(vulcan_dir)
 	mkdir -p $(vulcan_dir)/lib && cp -r vendor/lib/* $(vulcan_dir)/lib
 
+$(vulcan_dir)/public: $(vulcan_dir)
+	mkdir -p $(vulcan_dir)/public && cp -r public/* $(vulcan_dir)/public
+
 procfile: $(vulcan_dir)/Procfile
 
 $(vulcan_dir)/Procfile: $(vulcan_dir)
@@ -28,8 +31,8 @@ $(vulcan_dir)/Procfile: $(vulcan_dir)
 
 deploy_repo: $(vulcan_dir)/.git
 
-$(vulcan_dir)/.git: $(vulcan_dir)/Procfile $(vulcan_dir)/bin $(vulcan_dir)/lib
-	cd $(vulcan_dir) && git init && git add Procfile bin/ lib/ && git commit -m 'deploy $(revision)'
+$(vulcan_dir)/.git: $(vulcan_dir)/Procfile $(vulcan_dir)/bin $(vulcan_dir)/lib $(vulcan_dir)/public
+	cd $(vulcan_dir) && git init && git add Procfile bin/ lib/ public/ && git commit -m 'deploy $(revision)'
 
 deploy: $(vulcan_dir)/.git
 	cd $(vulcan_dir) && git push -f git@heroku.com:$(HEROKU_APP_NAME).git master

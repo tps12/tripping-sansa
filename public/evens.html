@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>Even Numbers</title>
+    </head>
+    <body>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script>
+            var resource = document.cookie.split('; ').reduce(function(memo, pair) {
+                var kv = pair.split('=');
+                memo[kv[0]] = kv[1];
+                return memo;
+            }, { })['resource'];
+
+            $(document).ready(function() {
+                $.ajax(resource,
+                       { accepts: { json: 'application/json' },
+                         dataType: 'json',
+                         success: function(data) {
+                                      $('body').append(data['value']);
+                                  },
+                         statusCode: {
+                            404: function() { alert('Not found'); }
+                         }
+                       });
+            });
+        </script>
+    </body>
+</html>

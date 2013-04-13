@@ -2,7 +2,9 @@
 
 #include "server/types/result.h"
 
-static struct result* init_result(char* error, void* data, void (*free_data)(void* data), char* location)
+struct cookie;
+
+static struct result* init_result(char* error, void* data, void (*free_data)(void* data), char* location, struct cookie* cookies)
 {
     struct result* result = 0;
 
@@ -12,18 +14,19 @@ static struct result* init_result(char* error, void* data, void (*free_data)(voi
         result->data = data;
         result->free_data = free_data;
         result->location = location;
+        result->cookies = cookies;
     }
     return result;
 }
 
 struct result* error_result(char* error)
 {
-    return init_result(error, 0, 0, 0);
+    return init_result(error, 0, 0, 0, 0);
 }
 
-struct result* success_result(void* data, void (*free_data)(void* data), char* location)
+struct result* success_result(void* data, void (*free_data)(void* data), char* location, struct cookie* cookies)
 {
-    return init_result(0, data, free_data, location);
+    return init_result(0, data, free_data, location, cookies);
 }
 
 void free_result(struct result* result)

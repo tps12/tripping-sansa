@@ -5,6 +5,8 @@
 
 #include "server/result.c"
 
+struct cookie { };
+
 static void* free_called_with = 0;
 
 static void free_data(void* data)
@@ -34,7 +36,7 @@ static void test_blank_success(void)
 {
     struct result* result = 0;
 
-    result = success_result(0, 0, 0);
+    result = success_result(0, 0, 0, 0);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(result);
     CU_ASSERT_PTR_NULL(result->error);
@@ -52,7 +54,7 @@ static void test_success_with_entity(void)
 
     sprintf(data, "some entity data");
 
-    result = success_result((void*)data, &free_data, 0);
+    result = success_result((void*)data, &free_data, 0, 0);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(result);
     CU_ASSERT_PTR_NULL(result->error);
@@ -71,7 +73,7 @@ static void test_entity_without_free(void)
 
     free_called_with = 0;
 
-    result = success_result((void*)data, 0, 0);
+    result = success_result((void*)data, 0, 0, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(result);
 
     free_result(result);
@@ -85,7 +87,7 @@ static void test_free_result(void)
 
     free_called_with = 0;
 
-    free_result(success_result((void*)data, &free_data, 0));
+    free_result(success_result((void*)data, &free_data, 0, 0));
     CU_ASSERT_PTR_EQUAL(free_called_with, data);
 
     free(data);
@@ -98,7 +100,7 @@ static void test_success_with_location(void)
 
     sprintf(location, "some location");
 
-    result = success_result(0, 0, location);
+    result = success_result(0, 0, location, 0);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(result);
     CU_ASSERT_PTR_NULL(result->error);
@@ -118,7 +120,7 @@ static void test_success_with_entity_and_location(void)
     sprintf(data, "some entity data");
     sprintf(location, "some location");
 
-    result = success_result((void*)data, &free_data, location);
+    result = success_result((void*)data, &free_data, location, 0);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(result);
     CU_ASSERT_PTR_NULL(result->error);
@@ -128,6 +130,19 @@ static void test_success_with_entity_and_location(void)
 
     free_result(result);
     free(data);
+}
+
+static void test_success_with_cookie(void)
+{
+    struct cookie cookie;
+    struct result* result = 0;
+
+    result = success_result(0, 0, 0, &cookie);
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(result);
+    CU_ASSERT_PTR_EQUAL(result->cookies, &cookie);
+
+    free_result(result);
 }
 
 int main()
@@ -147,7 +162,8 @@ int main()
         !CU_ADD_TEST(suite, test_entity_without_free) ||
         !CU_ADD_TEST(suite, test_free_result) ||
         !CU_ADD_TEST(suite, test_success_with_location) ||
-        !CU_ADD_TEST(suite, test_success_with_entity_and_location))
+        !CU_ADD_TEST(suite, test_success_with_entity_and_location) ||
+        !CU_ADD_TEST(suite, test_success_with_cookie))
         goto failed;
 
     CU_basic_set_mode(CU_BRM_VERBOSE);

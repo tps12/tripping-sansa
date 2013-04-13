@@ -6,6 +6,7 @@
 #include "test_helpers.h"
 
 #include "routing/types/route.h"
+#include "server/types/cookie.h"
 #include "server/types/found_resource.h"
 #include "server/types/resource.h"
 
@@ -525,6 +526,42 @@ static void test_response_location(void)
     free_routes(routes);
 }
 
+static void test_response_cookie(void)
+{
+    struct route* routes;
+    struct response* response = 0;
+    struct cookie* cookie = malloc(sizeof(struct cookie));
+
+    found_route = malloc(sizeof(struct path_route));
+    routes = path_route(found_route, 0);
+
+    resource = resource_define(0, resource_method(
+        "GET", 0, 0, &method, 0));
+
+    cookie->name = malloc(16);
+    strncpy(cookie->name, "something", 15);
+    cookie->value = malloc(16);
+    strncpy(cookie->value, "delicious", 15);
+    cookie->next = 0;
+
+    result_data = 0;
+    result.location = 0;
+    result.cookies = cookie;
+    free_result_called = 0;
+
+    response = handle_request(routes, "GET", "something", 0, 0, 0, 0);
+    CU_ASSERT_EQUAL(response->status, 204);
+    CU_ASSERT_PTR_EQUAL(response->cookies, cookie);
+    CU_ASSERT_TRUE(free_result_called);
+
+    free_response(response);
+
+    free_resource(resource);
+    resource = 0;
+
+    free_routes(routes);
+}
+
 static void test_response_to_bad_request(void)
 {
     struct route* routes;
@@ -586,6 +623,7 @@ int main()
         !CU_ADD_TEST(suite, test_response_without_data) ||
         !CU_ADD_TEST(suite, test_response_without_expected_data) ||
         !CU_ADD_TEST(suite, test_response_location) ||
+        !CU_ADD_TEST(suite, test_response_cookie) ||
         !CU_ADD_TEST(suite, test_response_to_bad_request))
         goto failed;
 

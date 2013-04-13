@@ -24,15 +24,31 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <microhttpd.h>
 
 #include "server/functions/handle_request.h"
+#include "server/types/cookie.h"
 #include "server/types/response.h"
 
 struct request_entity {
     void* data;
     size_t length;
 };
+
+static void add_cookies(struct MHD_Response* mhd_response, struct cookie* cookie)
+{
+    char* pair;
+
+    if (cookie && (pair = malloc(strlen(cookie->name) + strlen(cookie->value) + 2))) {
+        strcpy(pair, cookie->name);
+        strcat(pair, "=");
+        strcat(pair, cookie->value);
+        MHD_add_response_header(mhd_response, "Set-Cookie", pair);
+        free(pair);
+        add_cookies(mhd_response, cookie->next);
+    }
+}
 
 static int access_handler(void *cls,
           struct MHD_Connection *connection,
@@ -84,6 +100,8 @@ static int access_handler(void *cls,
                 MHD_add_response_header(mhd_response, "Location", response->location);
             if (response->entity_type)
                 MHD_add_response_header(mhd_response, "Content-Type", response->entity_type);
+
+            add_cookies(mhd_response, response->cookies);
 
             ret = MHD_queue_response(connection, response->status, mhd_response);
 

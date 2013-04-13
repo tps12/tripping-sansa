@@ -9,6 +9,7 @@
 #include "routing/functions/route_path.h"
 
 #include "server/types/found_resource.h"
+#include "server/types/cookie.h"
 #include "server/types/resource.h"
 #include "server/types/result.h"
 #include "server/types/entity.h"
@@ -16,13 +17,14 @@
 
 #include "server/functions/free_result.h"
 
-static struct response* build_response(int status, char* allow, char* location, char const* type, struct entity* entity)
+static struct response* build_response(int status, char* allow, char* location, char const* type, struct entity* entity, struct cookie* cookies)
 {
     struct response* response = malloc(sizeof(struct response));
     if (response) {
         response->status = status;
         response->allow = allow;
         response->location = location;
+        response->cookies = cookies;
         response->entity_type = (char*)type;
         response->entity = entity ? entity->data : 0;
         response->entity_length = entity ? entity->length : 0;
@@ -56,7 +58,7 @@ static struct response* not_acceptable(struct writer* writers)
             strncat(body, writers->type, 256);
             first = 0;
         }
-        return build_response(406, 0, 0, "text/plain", build_entity(body));
+        return build_response(406, 0, 0, "text/plain", build_entity(body), 0);
     }
 
     return 0;
@@ -69,10 +71,10 @@ static struct response* internal_error()
     if (body)
         strncpy(body, "Check server logs", 31);
 
-    return build_response(500, 0, 0, "text/plain", build_entity(body));
+    return build_response(500, 0, 0, "text/plain", build_entity(body), 0);
 }
 
-static struct response* success(char const* entity_type, struct entity* entity, char* location)
+static struct response* success(char const* entity_type, struct entity* entity, char* location, struct cookie* cookies)
 {
     int status = location ? 201 : entity ? 200 : 204;
     char* location_copy = 0;
@@ -84,7 +86,7 @@ static struct response* success(char const* entity_type, struct entity* entity, 
         strncpy(location_copy, location, 2048);
     }
 
-    return build_response(status, 0, location_copy, entity_type, entity);
+    return build_response(status, 0, location_copy, entity_type, entity, cookies);
 }
 
 static struct response* unsupported_type(struct reader* readers)
@@ -100,7 +102,7 @@ static struct response* unsupported_type(struct reader* readers)
             strncat(body, readers->type, 256);
             first = 0;
         }
-        return build_response(415, 0, 0, "text/plain", build_entity(body));
+        return build_response(415, 0, 0, "text/plain", build_entity(body), 0);
     }
 
     return 0;
@@ -112,7 +114,7 @@ static struct response* bad_request(char* error)
 
     if (body) {
         strncpy(body, error, 2048);
-        return build_response(400, 0, 0, "text/plain", build_entity(body));
+        return build_response(400, 0, 0, "text/plain", build_entity(body), 0);
     }
 
     return 0;
@@ -187,7 +189,7 @@ static struct response* respond_and_write(char const* path, void* resource_data,
         if (result = respond(path, resource_data, data)) {
             response = result->error ? bad_request(result->error) :
                 result->data ? internal_error() :
-                success(0, 0, result->location);
+                success(0, 0, result->location, result->cookies);
             free_result(result);
             return response;
         }
@@ -200,7 +202,7 @@ static struct response* respond_and_write(char const* path, void* resource_data,
             if (!strncmp(writer->type, accept_types[i], 256)) {
                 if (result = respond(path, resource_data, data)) {
                     response = result->error ? bad_request(result->error) :
-                        result->data ? success(writer->type, writer->writer(result->data), result->location) :
+                        result->data ? success(writer->type, writer->writer(result->data), result->location, result->cookies) :
                         internal_error();
                     free_result(result);
                     free_strings(accept_types);
@@ -321,6 +323,16 @@ void free_routes(struct route* route)
     free(route);
 }
 
+void free_cookies(struct cookie* cookie)
+{
+    if (cookie) {
+        free(cookie->name);
+        free(cookie->value);
+        free_cookies(cookie->next);
+    }
+    free(cookie);
+}
+
 void free_response(struct response* response)
 {
     if (response) {
@@ -328,6 +340,8 @@ void free_response(struct response* response)
             free(response->allow);
         if (response->location)
             free(response->location);
+        if (response->cookies)
+            free_cookies(response->cookies);
         if (response->entity_length)
             free(response->entity);
     }
@@ -359,7 +373,7 @@ static struct response* not_allowed(struct method* methods)
             strncat(allow, methods->method, 128 - (strlen(allow)));
             first = 0;
         }
-        return build_response(405, allow, 0, "text/plain", build_entity(body));
+        return build_response(405, allow, 0, "text/plain", build_entity(body), 0);
     }
 
     free(allow);
@@ -368,7 +382,7 @@ static struct response* not_allowed(struct method* methods)
 
 static struct response* not_found()
 {
-    return build_response(404, 0, 0, 0, 0);
+    return build_response(404, 0, 0, 0, 0, 0);
 }
 
 struct response* handle_request(struct route* routes, char const* method, char const* path, char const* entity_type, char const* entity, size_t entity_length, char const* accept)

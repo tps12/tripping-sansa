@@ -2,7 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#define MONGO_HAVE_STDINT
+#include "mongo.h"
+
 #include "adapters/libmicrohttpd.h"
+
+#include "db/functions/free_hosts.h"
+#include "db/functions/parse_mongo_uri.h"
+#include "db/types/mongo_host.h"
 
 #include "resource/functions/found_resource.h"
 #include "resource/functions/resource_not_found.h"
@@ -134,10 +141,62 @@ static char* read_file(char const* path)
     return buffer;
 }
 
+static void try_mongo(void)
+{
+    mongo conn;
+    mongo_write_concern write_concern;
+    bson b;
+    char const* mongo_uri = getenv("MONGOHQ_URL");
+    struct mongo_host* hosts = 0;
+    char collection[32];
+
+    if (mongo_uri)
+        hosts = parse_mongo_uri(mongo_uri);
+
+    if (hosts) {
+        if (!hosts->database) {
+            log_error("Must define Mongo database\n");
+            return;
+        }
+
+        if (mongo_client(&conn, hosts->host, hosts->port) != MONGO_OK) {
+            log_error("Failed to connect to Mongo\n");
+            return;
+        }
+
+        if (hosts->username)
+            if (mongo_cmd_authenticate(&conn, hosts->database, hosts->username, hosts->password) != MONGO_OK) {
+                log_error("Failed to authenticate with Mongo\n");
+                mongo_destroy(&conn);
+                return;
+            }
+
+        bson_init(&b);
+        bson_append_string(&b, "hello", "there");
+        bson_finish(&b);
+
+        mongo_write_concern_init(&write_concern);
+        write_concern.w = 1;
+        mongo_write_concern_finish(&write_concern);
+
+        sprintf(collection, "%s.test", hosts->database);
+        if (mongo_insert(&conn, collection, &b, &write_concern) != MONGO_OK) {
+            log_error("Failed to insert document: %s\n", conn.lasterrstr);
+        }
+
+        bson_destroy(&b);
+        mongo_destroy(&conn);
+        mongo_write_concern_destroy(&write_concern);
+        free_hosts(hosts);
+    }
+}
+
 int main(int argc, char const** argv)
 {
     struct route* routes;
     int port;
+
+    try_mongo();
 
     if (argc != 2)
     {

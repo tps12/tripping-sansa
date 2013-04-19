@@ -3,7 +3,7 @@ heroku_app = cervice
 bin_PROGRAMS = $(heroku_app)
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-cervice_SOURCES = src/app.c src/logging.c src/adapters/libmicrohttpd.c src/resource/resource.c src/routing/routing.c src/server/cookie.c src/server/result.c src/server/server.c
+cervice_SOURCES = src/app.c src/logging.c src/adapters/libmicrohttpd.c src/db/mongo.c src/resource/resource.c src/routing/routing.c src/server/cookie.c src/server/result.c src/server/server.c
 cervice_CFLAGS = $(DEPS_CFLAGS) $(MONGO_CFLAGS) -std=c89 -Werror
 cervice_LDADD = $(DEPS_LIBS) $(MONGO_LIBS)
 
